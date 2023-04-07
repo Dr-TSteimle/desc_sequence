@@ -210,15 +210,26 @@ impl BwaAlign {
 
         for record in a.iter() {
             let contig = self.bwa_tid_contig(record.tid() as usize);
-            let res = ranges_from_cigar(record.pos() as i32 + 1, Cigar::new_from_str(&format!("{}", record.cigar())), record.is_reverse());
-            res.into_iter().for_each(|(reference, query)| {
-                all_ranges.push(((contig.clone(), reference.0, reference.1), query))
-            });
+            if let Some(contig) =  contig {
+                let res = ranges_from_cigar(record.pos() as i32 + 1, Cigar::new_from_str(&format!("{}", record.cigar())), record.is_reverse());
+                res.into_iter().for_each(|(reference, query)| {
+                    all_ranges.push(((contig.clone(), reference.0, reference.1), query))
+                });
+            }
+            
         }
         all_ranges
     }
-    pub fn bwa_tid_contig(&self, tid: usize) -> String {
-        self.header.to_hashmap().get("SQ").unwrap().get(tid).unwrap().get("SN").unwrap().to_owned()
+    pub fn bwa_tid_contig(&self, tid: usize) -> Option<String> {
+        if let Some(h) = self.header.to_hashmap().get("SQ") {
+            if let Some(h) = h.get(tid) {
+                h.get("SN").cloned()
+            } else {
+                None
+            }
+        } else {
+            None
+        }
     }
 }
 
